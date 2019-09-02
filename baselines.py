@@ -66,11 +66,18 @@ class RandomStrategy(bt.Strategy):
         ('prob', .1),
     )
 
+    def __init__(self):
+        self.acquired = False
+
     def next(self):
-        if random.random() < self.p.prob:
-            self.buy()
-        elif random.random() < self.p.prob:
-            self.sell()
+        if not self.acquired:
+            if random.random() < self.p.prob:
+                self.buy()
+                self.acquired = True
+        else:
+            if random.random() < self.p.prob:
+                self.sell()
+                self.acquired = False
 
 
 def random_strategy():
