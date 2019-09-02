@@ -76,7 +76,7 @@ class RandomStrategy(bt.Strategy):
                 self.acquired = True
         else:
             if random.random() < self.p.prob:
-                self.sell()
+                self.close()
                 self.acquired = False
 
 

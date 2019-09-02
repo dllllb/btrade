@@ -1,9 +1,6 @@
 import datetime
-import pandas as pd
 
 from baselines import buy_and_hold_strategy, strategy_quality, simple_buy_sell_strategy, random_strategy
-
-pd.options.display.float_format = '{:,.2f}'.format
 
 cerebro = buy_and_hold_strategy()
 
