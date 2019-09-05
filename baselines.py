@@ -13,11 +13,11 @@ class FinamCSV(bt.feeds.GenericCSVData):
         ('dtformat', '%Y%m%d'),
 
         ('datetime', 2),
-        ('open', 3),
-        ('high', 4),
-        ('low', 5),
-        ('close', 6),
-        ('volume', 7),
+        ('open', 4),
+        ('high', 5),
+        ('low', 6),
+        ('close', 7),
+        ('volume', 8),
     )
 
 

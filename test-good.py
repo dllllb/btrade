@@ -8,7 +8,10 @@ test_strategies(
         simple_buy_sell_strategy,
         random_strategy
     },
-    {'NVDA': YahooDS('NVDA.csv'), 'BTC-USD': YahooDS('BTC-USD.csv')},
+    {
+        'NVDA': YahooDS('data/NVDA.csv'),
+        'BTC-USD': YahooDS('data/BTC-USD.csv')
+    },
     from_date=datetime.datetime(2014, 1, 1),
     to_date=datetime.datetime(2019, 5, 1),
     n_steps=50,
