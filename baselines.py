@@ -2,21 +2,59 @@ import datetime
 import random
 import pandas as pd
 import backtrader as bt
+from tqdm import tqdm
 
 
-def strategy_quality(cer, data_file, from_date, to_date, steps, step_size):
+class FinamCSV(bt.feeds.GenericCSVData):
+    params = (
+        ('headers', True),
+        ('separator', '\t'),
+        ('nullvalue', float('NaN')),
+        ('dtformat', '%Y%m%d'),
+
+        ('datetime', 2),
+        ('open', 3),
+        ('high', 4),
+        ('low', 5),
+        ('close', 6),
+        ('volume', 7),
+    )
+
+
+class FinamDS:
+    def __init__(self, path):
+        self.path = path
+
+    def __call__(self, from_date, to_date):
+        return FinamCSV(
+            dataname=self.path,
+            fromdate=from_date,
+            todate=to_date)
+
+
+class YahooDS:
+    def __init__(self, path):
+        self.path = path
+
+    def __call__(self, from_date, to_date):
+        return bt.feeds.YahooFinanceCSVData(
+            dataname=self.path,
+            fromdate=from_date,
+            todate=to_date,
+            reverse=False)
+
+
+def strategy_quality(cer, data_source, from_date, to_date, steps, step_size):
     from copy import deepcopy
     vals = []
     first_start_date = to_date - datetime.timedelta(days=steps*step_size)
     cash = 100000.0
-    for s in range(steps):
+    for s in tqdm(range(steps)):
         c = deepcopy(cer)
         c.broker.setcash(cash)
-        data = bt.feeds.YahooFinanceCSVData(
-            dataname=data_file,
-            fromdate=from_date + datetime.timedelta(days=s*step_size),
-            todate=first_start_date + datetime.timedelta(days=s*step_size),
-            reverse=False)
+        data = data_source(
+            from_date + datetime.timedelta(days=s*step_size),
+            first_start_date + datetime.timedelta(days=s*step_size))
         c.adddata(data)
         c.run()
         val = c.broker.get_value()
@@ -86,3 +124,25 @@ def random_strategy():
     cerebro.addstrategy(RandomStrategy)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
+
+
+def test_strategies(strategies, logs, from_date, to_date, n_steps, step_size):
+    res = []
+    for strategy in strategies:
+        stats = [
+            strategy_quality(
+                strategy(),
+                log,
+                from_date=from_date,
+                to_date=to_date,
+                steps=n_steps,
+                step_size=step_size).rename(f'{strategy.__name__}-{log_name}')
+            for log_name, log in logs.items()]
+        stat_df = pd.concat(stats, axis=1)
+        res.append(stat_df)
+
+    for stat in res:
+        print(stat.describe())
+    print(pd.concat(s.mean() for s in res))
+    strategy_names = [s.__name__ for s in strategies]
+    print(pd.Series([s.mean().mean() for s in res], index=strategy_names))
