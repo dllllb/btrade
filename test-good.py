@@ -9,8 +9,8 @@ test_strategies(
         random_strategy
     },
     {
-        'NVDA': YahooDS('data/NVDA.csv'),
-        'BTC-USD': YahooDS('data/BTC-USD.csv')
+        'NVDA': YahooDS('data/NVDA.yahoo.csv'),
+        'BTC-USD': YahooDS('data/BTC-USD.yahoo.csv')
     },
     from_date=datetime.datetime(2014, 1, 1),
     to_date=datetime.datetime(2019, 5, 1),

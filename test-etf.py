@@ -9,10 +9,10 @@ test_strategies(
         random_strategy
     },
     {
-        'FXDE': FinamDS('data/FXDE_100101_190816.csv'),
-        'FXGD': FinamDS('data/FXGD_100101_190816.csv'),
-        'FXIT': FinamDS('data/FXIT_100101_190816.csv'),
-        'FXMM': FinamDS('data/FXMM_100101_190816.csv')
+        'FXDE': FinamDS('data/FXDE.finam.csv'),
+        'FXGD': FinamDS('data/FXGD.finam.csv'),
+        'FXIT': FinamDS('data/FXIT.finam.csv'),
+        'FXMM': FinamDS('data/FXMM.finam.csv')
     },
     from_date=datetime.datetime(2014, 1, 1),
     to_date=datetime.datetime(2019, 5, 1),

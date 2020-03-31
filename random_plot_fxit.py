@@ -7,7 +7,7 @@ cerebro = random_strategy()
 cerebro.broker.setcash(100000.0)
 
 data = FinamCSV(
-    dataname='data/FXIT_100101_190816.csv',
+    dataname='data/FXIT.finam.csv',
     fromdate=datetime.datetime(2017, 1, 1),
     todate=datetime.datetime(2019, 1, 1))
 cerebro.adddata(data)
