@@ -10,5 +10,6 @@
     - example: BTCUSD=X / Bitcoin stock
   - Commodity prices
     - example: CL=F / Crude Oil future
+    - example: BZ=F / Brent Oil last day
   - Indexes
     - example: ^GSPC / S&P 500 index
