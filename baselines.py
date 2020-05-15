@@ -4,46 +4,6 @@ import pandas as pd
 import backtrader as bt
 from tqdm import tqdm
 
-
-class FinamCSV(bt.feeds.GenericCSVData):
-    params = (
-        ('headers', True),
-        ('separator', '\t'),
-        ('nullvalue', float('NaN')),
-        ('dtformat', '%Y%m%d'),
-
-        ('datetime', 2),
-        ('open', 4),
-        ('high', 5),
-        ('low', 6),
-        ('close', 7),
-        ('volume', 8),
-    )
-
-
-class FinamDS:
-    def __init__(self, path):
-        self.path = path
-
-    def __call__(self, from_date, to_date):
-        return FinamCSV(
-            dataname=self.path,
-            fromdate=from_date,
-            todate=to_date)
-
-
-class YahooDS:
-    def __init__(self, path):
-        self.path = path
-
-    def __call__(self, from_date, to_date):
-        return bt.feeds.YahooFinanceCSVData(
-            dataname=self.path,
-            fromdate=from_date,
-            todate=to_date,
-            reverse=False)
-
-
 def strategy_quality(cer, data_source, from_date, to_date, steps, step_size):
     from copy import deepcopy
     vals = []
