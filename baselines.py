@@ -5,6 +5,9 @@ import backtrader as bt
 from tqdm import tqdm
 
 def strategy_quality(cer, data_source, from_date, to_date, steps, step_size):
+    from_date = datetime.datetime.fromisoformat(from_date)
+    to_date = datetime.datetime.fromisoformat(to_date)
+
     from copy import deepcopy
     vals = []
     first_start_date = to_date - datetime.timedelta(days=steps*step_size)
