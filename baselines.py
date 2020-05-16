@@ -18,8 +18,7 @@ def strategy_quality(cer, data_source, from_date, to_date, steps, step_size):
 
         start = from_date + datetime.timedelta(days=s*step_size)
         end = first_start_date + datetime.timedelta(days=s*step_size)
-        ds_slice = data_source[(data_source.index > start) & (data_source.index < end)]
-        data = bt.feeds.PandasData(dataname=ds_slice)
+        data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
         c.adddata(data)
         
         c.run()
