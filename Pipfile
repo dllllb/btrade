@@ -1,0 +1,22 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pylint = "*"
+
+[packages]
+tqdm = ">=4.2"
+pandas = ">=0.24"
+pandas-datareader = ">=0.8.1"
+numpy = ">=1.16"
+scikit-learn = ">=0.20"
+backtrader = ">=1.9"
+matplotlib = ">=3"
+jupyter = "*"
+statsmodels = ">=0.11"
+requests-cache = ">=0.5.2"
+
+[requires]
+python_version = "3.8"
