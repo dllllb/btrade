@@ -4,7 +4,7 @@ import pandas as pd
 import backtrader as bt
 from tqdm import tqdm
 
-def strategy_quality(cer, data_source, from_date, to_date, steps, step_size):
+def strategy_quality(cer: bt.Cerebro, data_source, from_date, to_date, steps, step_size):
     from_date = datetime.datetime.fromisoformat(from_date)
     to_date = datetime.datetime.fromisoformat(to_date)
 
@@ -62,6 +62,31 @@ def simple_buy_sell_strategy():
     cerebro.add_signal(bt.SIGNAL_LONGEXIT, CloseVsSmaSignal, window=60, mdir='up', gap=.05)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
+
+
+class PrevPeakStrategy(bt.Strategy):
+    params = (
+        ('window', 90),
+        ('max_thresold', .9),
+        ('min_thresold', 1.1),
+    )
+
+    def __init__(self):
+        self.acquired = False
+        self.win_max = bt.indicators.Highest(period=self.p.window)
+        self.win_min = bt.indicators.Lowest(period=self.p.window)
+
+
+    def next(self):
+        max_percents = (self.data - self.win_max)/self.win_max
+        min_percents = (self.data - self.win_min)/self.win_min
+
+        if max_percents > self.p.max_thresold and self.acquired:
+            self.close()
+            self.acquired = False
+        elif min_percents < self.p.min_thresold and not self.acquired:
+            self.buy()
+            self.acquired = True
 
 
 class RandomStrategy(bt.Strategy):
