@@ -3,8 +3,16 @@ import random
 import pandas as pd
 import backtrader as bt
 from tqdm import tqdm
+from typing import Dict, List, Callable
 
-def strategy_quality(cer: bt.Cerebro, data_source, from_date, to_date, steps, step_size):
+def strategy_quality(
+    cer: bt.Cerebro,
+    data_source: pd.DataFrame,
+    from_date: str,
+    to_date: str,
+    steps: int,
+    step_size: int
+):
     from_date = datetime.datetime.fromisoformat(from_date)
     to_date = datetime.datetime.fromisoformat(to_date)
 
@@ -116,7 +124,14 @@ def random_strategy():
     return cerebro
 
 
-def test_strategies(strategies, logs, from_date, to_date, n_steps, step_size):
+def test_strategies(
+    strategies: List[Callable[[], bt.Cerebro]],
+    logs: Dict[str, pd.DataFrame],
+    from_date: str,
+    to_date: str,
+    n_steps: int,
+    step_size: int
+):
     res = []
     for strategy in strategies:
         stats = [
