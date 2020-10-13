@@ -6,7 +6,7 @@ from tqdm import tqdm
 from typing import Dict, List, Callable
 
 def strategy_quality(
-    cer: bt.Cerebro,
+    cer: Callable[[], bt.Cerebro],
     data_source: pd.DataFrame,
     from_date: str,
     to_date: str,
@@ -16,12 +16,11 @@ def strategy_quality(
     from_date = datetime.datetime.fromisoformat(from_date)
     to_date = datetime.datetime.fromisoformat(to_date)
 
-    from copy import deepcopy
     vals = []
     first_start_date = to_date - datetime.timedelta(days=steps*step_size)
     cash = 100000.0
     for s in tqdm(range(steps)):
-        c = deepcopy(cer)
+        c = cer()
         c.broker.setcash(cash)
 
         start = from_date + datetime.timedelta(days=s*step_size)
@@ -63,7 +62,7 @@ class CloseVsSmaSignal(bt.Indicator):
             self.lines.signal = -(gap > min_gap_val)
 
 
-def simple_buy_sell_strategy():
+def close_vs_sma_signal_strategy():
     cerebro = bt.Cerebro()
 
     cerebro.add_signal(bt.SIGNAL_LONG, CloseVsSmaSignal, window=15, mdir='down', gap=.05)
@@ -136,7 +135,7 @@ def test_strategies(
     for strategy in strategies:
         stats = [
             strategy_quality(
-                strategy(),
+                strategy,
                 log,
                 from_date=from_date,
                 to_date=to_date,
