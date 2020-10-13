@@ -1,6 +1,7 @@
 import datetime
 import random
 import pandas as pd
+import numpy as np
 import backtrader as bt
 from tqdm import tqdm
 from typing import Dict, List, Callable
@@ -8,31 +9,52 @@ from typing import Dict, List, Callable
 def strategy_quality(
     cer: Callable[[], bt.Cerebro],
     data_source: pd.DataFrame,
-    from_date: str,
-    to_date: str,
-    steps: int,
-    step_size: int
+    n_trials: int
 ):
-    from_date = datetime.datetime.fromisoformat(from_date)
-    to_date = datetime.datetime.fromisoformat(to_date)
+    from_date = data_source.index.min()
+    to_date = data_source.index.max()
+    days = (to_date - from_date).days
 
     vals = []
-    first_start_date = to_date - datetime.timedelta(days=steps*step_size)
     cash = 100000.0
-    for s in tqdm(range(steps)):
+    for _ in tqdm(range(n_trials)):
         c = cer()
         c.broker.setcash(cash)
 
-        start = from_date + datetime.timedelta(days=s*step_size)
-        end = first_start_date + datetime.timedelta(days=s*step_size)
+        interval_len = np.random.randint(150, days-30)
+        start_day = np.random.randint(0, days - interval_len)
+
+        start = from_date + datetime.timedelta(days=start_day)
+        end = start + datetime.timedelta(days=interval_len)
         data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
         c.adddata(data)
         
         c.run()
         val = c.broker.get_value()
         vals.append(val)
-        norm_vals = pd.Series(vals)/cash
+
+    norm_vals = pd.Series(vals)/cash
     return norm_vals
+
+
+def evaluate_strategies(
+    strategies: List[Callable[[], bt.Cerebro]],
+    logs: Dict[str, pd.DataFrame],
+    n_trials: int
+):
+    res = []
+    for strategy in strategies:
+        stats = []
+        for log_name, log in logs.items():
+            stat = strategy_quality(strategy, log, n_trials).rename(f'{log_name}')
+            stats.append(stat)
+        stat_df = pd.concat(stats, axis=1)
+        stat_df['strategy'] = strategy.__name__
+        res.append(stat_df)
+
+    res_df = pd.concat(res, axis=0)
+    return res_df
+
 
 
 def buy_and_hold_strategy():
@@ -157,32 +179,3 @@ def random_strategy():
     cerebro.addstrategy(RandomStrategy)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
-
-
-def test_strategies(
-    strategies: List[Callable[[], bt.Cerebro]],
-    logs: Dict[str, pd.DataFrame],
-    from_date: str,
-    to_date: str,
-    n_steps: int,
-    step_size: int
-):
-    res = []
-    for strategy in strategies:
-        stats = [
-            strategy_quality(
-                strategy,
-                log,
-                from_date=from_date,
-                to_date=to_date,
-                steps=n_steps,
-                step_size=step_size).rename(f'{strategy.__name__}-{log_name}')
-            for log_name, log in logs.items()]
-        stat_df = pd.concat(stats, axis=1)
-        res.append(stat_df)
-
-    for stat in res:
-        print(stat.describe())
-    print(pd.concat(s.mean() for s in res))
-    strategy_names = [s.__name__ for s in strategies]
-    print(pd.Series([s.mean().mean() for s in res], index=strategy_names))
