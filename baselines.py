@@ -71,6 +71,34 @@ def close_vs_sma_signal_strategy():
     return cerebro
 
 
+class MeanReversion(bt.Indicator):
+    lines = ('signal',)
+
+    params = (
+        ('window_small', 30),
+        ('window_large', 90),
+        ('mdir', 'down'),
+    )
+
+    def __init__(self):
+        sma = bt.indicators.SMA(period=self.p.window_small)
+        lma = bt.indicators.SMA(period=self.p.window_large)
+
+        if self.p.mdir == 'down':
+            self.lines.signal = sma < lma
+        elif self.p.mdir == 'up':
+            self.lines.signal = sma > lma
+
+
+def mean_reversion_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.add_signal(bt.SIGNAL_LONG, MeanReversion, mdir='down')
+    cerebro.add_signal(bt.SIGNAL_LONGEXIT, MeanReversion, mdir='up')
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
+
+
 class PrevPeakStrategy(bt.Strategy):
     params = (
         ('window', 90),
