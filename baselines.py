@@ -96,6 +96,14 @@ class PrevPeakStrategy(bt.Strategy):
             self.acquired = True
 
 
+def prev_peak_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(PrevPeakStrategy)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
+
+
 class RandomStrategy(bt.Strategy):
     params = (
         ('prob', .1),
