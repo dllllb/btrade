@@ -3,6 +3,7 @@ import random
 import pandas as pd
 import numpy as np
 import backtrader as bt
+from collections import defaultdict
 from tqdm import tqdm
 from typing import Dict, List, Callable
 
@@ -17,7 +18,7 @@ def strategy_quality(
 
     vals = []
     cash = 100000.0
-    for _ in tqdm(range(n_trials)):
+    for _ in range(n_trials):
         c = cer()
         c.broker.setcash(cash)
 
@@ -42,14 +43,16 @@ def evaluate_strategies(
     logs: Dict[str, pd.DataFrame],
     n_trials: int
 ):
+    stats = defaultdict(list)
+    tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]
+    for strategy, log_name, log in tqdm(tasks):
+        stat = strategy_quality(strategy, log, n_trials).rename(f'{log_name}')
+        stats[strategy.__name__].append(stat)
+
     res = []
-    for strategy in strategies:
-        stats = []
-        for log_name, log in logs.items():
-            stat = strategy_quality(strategy, log, n_trials).rename(f'{log_name}')
-            stats.append(stat)
-        stat_df = pd.concat(stats, axis=1)
-        stat_df['strategy'] = strategy.__name__
+    for strategy, ss in stats.items():
+        stat_df = pd.concat(ss, axis=1)
+        stat_df['strategy'] = strategy
         res.append(stat_df)
 
     res_df = pd.concat(res, axis=0)
