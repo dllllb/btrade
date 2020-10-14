@@ -154,28 +154,25 @@ def prev_peak_strategy():
     return cerebro
 
 
-class RandomStrategy(bt.Strategy):
+class Random(bt.Indicator):
+    lines = ('signal',)
+
     params = (
         ('prob', .1),
     )
 
-    def __init__(self):
-        self.acquired = False
-
     def next(self):
-        if not self.acquired:
-            if random.random() < self.p.prob:
-                self.buy()
-                self.acquired = True
-        else:
-            if random.random() < self.p.prob:
-                self.close()
-                self.acquired = False
+        if random.random() < self.p.prob:
+            self.lines.signal[0] = 1
+        elif random.random() < self.p.prob:
+            self.lines.signal[0] = -1
 
 
 def random_strategy():
     cerebro = bt.Cerebro()
 
-    cerebro.addstrategy(RandomStrategy)
+    #cerebro.addstrategy(RandomStrategy)
+    cerebro.add_signal(bt.SIGNAL_LONG, Random)
+    cerebro.add_signal(bt.SIGNAL_LONGEXIT, Random)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
