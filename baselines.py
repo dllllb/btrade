@@ -56,7 +56,6 @@ def evaluate_strategies(
     return res_df
 
 
-
 def buy_and_hold_strategy():
     cerebro = bt.Cerebro()
     cerebro.add_signal(bt.SIGNAL_LONG, bt.indicators.AllN)
@@ -64,7 +63,7 @@ def buy_and_hold_strategy():
     return cerebro
 
 
-class CloseVsSmaSignal(bt.Indicator):
+class CloseVsSma(bt.Indicator):
     lines = ('signal',)
 
     params = (
@@ -74,21 +73,23 @@ class CloseVsSmaSignal(bt.Indicator):
     )
 
     def __init__(self):
-        sma = bt.indicators.SMA(period=self.p.window)
-        min_gap_val = sma*self.p.gap
-        gap = self.data - sma
+        self.sma = bt.indicators.SMA(period=self.p.window)
 
-        if self.p.mdir == 'down':
-            self.lines.signal = gap < -min_gap_val
-        elif self.p.mdir == 'up':
-            self.lines.signal = -(gap > min_gap_val)
+    def next(self):
+        sma_share = self.data/self.sma
+        if sma_share < 1-self.p.gap:
+            self.lines.signal[0] = 1
+        elif sma_share > 1+self.p.gap:
+            self.lines.signal[0] = -1
+        else:
+            self.lines.signal[0] = 0
 
 
-def close_vs_sma_signal_strategy():
+def close_vs_sma_strategy():
     cerebro = bt.Cerebro()
 
-    cerebro.add_signal(bt.SIGNAL_LONG, CloseVsSmaSignal, window=15, mdir='down', gap=.05)
-    cerebro.add_signal(bt.SIGNAL_LONGEXIT, CloseVsSmaSignal, window=60, mdir='up', gap=.05)
+    cerebro.add_signal(bt.SIGNAL_LONG, CloseVsSma, window=15, gap=.05)
+    cerebro.add_signal(bt.SIGNAL_LONGEXIT, CloseVsSma, window=60, gap=.05)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
 
@@ -99,29 +100,31 @@ class MeanReversion(bt.Indicator):
     params = (
         ('window_small', 30),
         ('window_large', 90),
-        ('mdir', 'down'),
     )
 
     def __init__(self):
-        sma = bt.indicators.SMA(period=self.p.window_small)
-        lma = bt.indicators.SMA(period=self.p.window_large)
+        self.sma = bt.indicators.SMA(period=self.p.window_small)
+        self.lma = bt.indicators.SMA(period=self.p.window_large)
 
-        if self.p.mdir == 'down':
-            self.lines.signal = sma < lma
-        elif self.p.mdir == 'up':
-            self.lines.signal = sma > lma
+    def next(self):
+        if self.sma < self.lma:
+            self.lines.signal[0] = 1
+        elif self.sma > self.lma:
+            self.lines.signal[0] = -1
 
 
 def mean_reversion_strategy():
     cerebro = bt.Cerebro()
 
-    cerebro.add_signal(bt.SIGNAL_LONG, MeanReversion, mdir='down')
-    cerebro.add_signal(bt.SIGNAL_LONGEXIT, MeanReversion, mdir='up')
+    cerebro.add_signal(bt.SIGNAL_LONG, MeanReversion)
+    cerebro.add_signal(bt.SIGNAL_LONGEXIT, MeanReversion)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
 
 
-class PrevPeakStrategy(bt.Strategy):
+class PrevPeak(bt.Indicator):
+    lines = ('signal',)
+
     params = (
         ('window', 90),
         ('max_thresold', .9),
@@ -129,27 +132,24 @@ class PrevPeakStrategy(bt.Strategy):
     )
 
     def __init__(self):
-        self.acquired = False
         self.win_max = bt.indicators.Highest(period=self.p.window)
         self.win_min = bt.indicators.Lowest(period=self.p.window)
 
-
     def next(self):
-        max_percents = (self.data - self.win_max)/self.win_max
-        min_percents = (self.data - self.win_min)/self.win_min
+        max_percents = self.data/self.win_max
+        min_percents = self.data/self.win_min
 
-        if max_percents > self.p.max_thresold and self.acquired:
-            self.close()
-            self.acquired = False
-        elif min_percents < self.p.min_thresold and not self.acquired:
-            self.buy()
-            self.acquired = True
+        if max_percents > self.p.max_thresold:
+            self.lines.signal[0] = -1
+        elif min_percents < self.p.min_thresold:
+            self.lines.signal[0] = 1
 
 
 def prev_peak_strategy():
     cerebro = bt.Cerebro()
 
-    cerebro.addstrategy(PrevPeakStrategy)
+    cerebro.add_signal(bt.SIGNAL_LONG, PrevPeak)
+    cerebro.add_signal(bt.SIGNAL_LONGEXIT, PrevPeak)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
 
