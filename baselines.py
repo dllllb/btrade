@@ -204,3 +204,54 @@ def prev_peak_nodrop_strategy():
     cerebro.addstrategy(PrevPeakNoDrop)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
+
+
+class CloseVsSmaNoDrop(bt.Strategy):
+    def __init__(self):
+        self.acquired = False
+        self.csma_down = CloseVsSma(window=15, gap=.05)
+        self.csma_up = CloseVsSma(window=15, gap=.05)
+
+    def next(self):
+        if not self.acquired:
+            if self.csma_down > 0:
+                self.buy()
+                self.buy_price = self.data[0]
+                self.acquired = True
+        elif self.acquired:
+            if self.csma_up < 0 and self.buy_price < self.data:
+                self.close()
+                self.acquired = False
+
+
+def close_vs_sma_nodrop_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(CloseVsSmaNoDrop)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
+
+
+class MeanReversionNoDrop(bt.Strategy):
+    def __init__(self):
+        self.acquired = False
+        self.mr = MeanReversion()
+
+    def next(self):
+        if not self.acquired:
+            if self.mr > 0:
+                self.buy()
+                self.buy_price = self.data[0]
+                self.acquired = True
+        elif self.acquired:
+            if self.mr < 0 and self.buy_price < self.data:
+                self.close()
+                self.acquired = False
+
+
+def mean_reversion_nodrop_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(MeanReversionNoDrop)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
