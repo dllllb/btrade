@@ -179,3 +179,28 @@ def random_strategy():
     cerebro.add_signal(bt.SIGNAL_LONGEXIT, Random)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
+
+
+class PrevPeakNoDrop(bt.Strategy):
+    def __init__(self):
+        self.acquired = False
+        self.prev_peak = PrevPeak()
+
+    def next(self):
+        if not self.acquired:
+            if self.prev_peak > 0:
+                self.buy()
+                self.buy_price = self.data[0]
+                self.acquired = True
+        elif self.acquired:
+            if self.prev_peak < 0 and self.buy_price < self.data:
+                self.close()
+                self.acquired = False
+
+
+def prev_peak_nodrop_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(PrevPeakNoDrop)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
