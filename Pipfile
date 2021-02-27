@@ -20,6 +20,7 @@ statsmodels = ">=0.11"
 requests-cache = ">=0.5.2"
 fbprophet = ">=0.7.1"
 seaborn = "*"
+ccxt = "*"
 
 [requires]
 python_version = "3.8"
