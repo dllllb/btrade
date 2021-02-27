@@ -64,6 +64,6 @@ ohlcv = exchange.filter_by_since_limit(all_ohlcv, earliest_timestamp, None, key=
 df = pd.DataFrame(ohlcv, columns=['dt', 'open', 'high', 'low', 'close', 'volume'])
 df['dt'] = pd.to_datetime(df.dt, unit='ms')
 df = df.set_index('dt')
-df.to_csv(args.csv)
+df.to_csv(args.csv, compression='gzip')
 
 print(f'Saved {len(ohlcv)} candles from {exchange.iso8601(ohlcv[0][0])} to {exchange.iso8601(ohlcv[-1][0])} to {args.csv}')
