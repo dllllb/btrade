@@ -21,6 +21,7 @@ requests-cache = ">=0.5.2"
 fbprophet = ">=0.7.1"
 seaborn = "*"
 ccxt = "*"
+lightgbm = "*"
 
 [requires]
 python_version = "3.8"
