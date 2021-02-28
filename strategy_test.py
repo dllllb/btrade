@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from baselines import evaluate_strategies, buy_and_hold_strategy, random_strategy
+from strategy import evaluate_strategies, buy_and_hold_strategy, random_strategy
 
 def random_ticker(date_from, date_to):
     dates = pd.date_range(date_from, date_to)
