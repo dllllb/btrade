@@ -277,7 +277,7 @@ class AntiDrop(bt.Strategy):
                 self.buy()
                 self.acquired = True
         elif self.acquired:
-            if self.mr < 0 and self.buy_price < self.data:
+            if self.mr_down < 0:
                 self.close()
                 self.acquired = False
                 self.sell_price = self.data[0]
