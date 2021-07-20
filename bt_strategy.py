@@ -255,3 +255,37 @@ def mean_reversion_nodrop_strategy():
     cerebro.addstrategy(MeanReversionNoDrop)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
+
+
+class AntiDrop(bt.Strategy):
+    def __init__(self):
+        self.initial_buy = False
+        self.acquired = False
+        self.mr_down = MeanReversion(window_small=5, window_large=30)
+        self.mr_up = MeanReversion(window_small=30, window_large=90)
+
+    def next(self):
+        if not self.initial_buy:
+            self.buy()
+            self.acquired = True
+            self.initial_buy = True
+        elif not self.acquired:
+            if self.data[0] > self.sell_price:
+                self.buy()
+                self.acquired = True
+            if self.mr_up > 0:
+                self.buy()
+                self.acquired = True
+        elif self.acquired:
+            if self.mr < 0 and self.buy_price < self.data:
+                self.close()
+                self.acquired = False
+                self.sell_price = self.data[0]
+
+
+def anti_drop_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(AntiDrop)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
