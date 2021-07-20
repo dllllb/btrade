@@ -6,21 +6,25 @@ import backtrader as bt
 from collections import defaultdict
 from tqdm import tqdm
 from typing import Dict, List, Callable
+from joblib import Parallel, delayed
 
 def strategy_quality(
     cer: Callable[[], bt.Cerebro],
     data_source: pd.DataFrame,
-    n_trials: int
+    n_trials: int,
+    ticker: str,
 ):
     from_date = data_source.index.min()
     to_date = data_source.index.max()
     days = (to_date - from_date).days
 
     vals = []
+    dds = []
     cash = 100000.0
     for _ in range(n_trials):
         c = cer()
         c.broker.setcash(cash)
+        c.addanalyzer(bt.analyzers.DrawDown)
 
         interval_len = np.random.randint(150, days-30)
         start_day = np.random.randint(0, days - interval_len)
@@ -30,33 +34,33 @@ def strategy_quality(
         data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
         c.adddata(data)
         
-        c.run()
+        res = c.run()
         val = c.broker.get_value()
         vals.append(val)
+        max_dd = res[0].analyzers[0].get_analysis()['max']['drawdown']
+        dds.append(max_dd)
 
     norm_vals = pd.Series(vals)/cash
-    return norm_vals
+    res = pd.DataFrame({'value': norm_vals, 'dropdown': pd.Series(dds)})
+    res['strategy'] = cer.__name__
+    res['ticker'] = ticker
+    return res
 
 
 def evaluate_strategies(
     strategies: List[Callable[[], bt.Cerebro]],
     logs: Dict[str, pd.DataFrame],
-    n_trials: int
+    n_trials: int,
+    n_jobs: int
 ):
-    stats = defaultdict(list)
     tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]
-    for strategy, log_name, log in tqdm(tasks):
-        stat = strategy_quality(strategy, log, n_trials).rename(f'{log_name}')
-        stats[strategy.__name__].append(stat)
 
-    res = []
-    for strategy, ss in stats.items():
-        stat_df = pd.concat(ss, axis=1)
-        stat_df['strategy'] = strategy
-        res.append(stat_df)
+    stats = Parallel(n_jobs)(
+        delayed(strategy_quality)(strategy, log, n_trials, ticker)
+        for strategy, ticker, log in tqdm(tasks)
+    )
 
-    res_df = pd.concat(res, axis=0)
-    return res_df
+    return pd.concat(stats, axis=0)
 
 
 def buy_and_hold_strategy():
