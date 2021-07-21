@@ -11,40 +11,31 @@ from joblib import Parallel, delayed
 def strategy_quality(
     cer: Callable[[], bt.Cerebro],
     data_source: pd.DataFrame,
-    n_trials: int,
     ticker: str,
 ):
     from_date = data_source.index.min()
     to_date = data_source.index.max()
     days = (to_date - from_date).days
 
-    vals = []
-    dds = []
     cash = 100000.0
-    for _ in range(n_trials):
-        c = cer()
-        c.broker.setcash(cash)
-        c.addanalyzer(bt.analyzers.DrawDown)
+    c = cer()
+    c.broker.setcash(cash)
+    c.addanalyzer(bt.analyzers.DrawDown)
 
-        interval_len = np.random.randint(150, days-30)
-        start_day = np.random.randint(0, days - interval_len)
+    interval_len = np.random.randint(150, days-30)
+    start_day = np.random.randint(0, days - interval_len)
 
-        start = from_date + datetime.timedelta(days=start_day)
-        end = start + datetime.timedelta(days=interval_len)
-        data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
-        c.adddata(data)
-        
-        res = c.run()
-        val = c.broker.get_value()
-        vals.append(val)
-        max_dd = res[0].analyzers[0].get_analysis()['max']['drawdown']
-        dds.append(max_dd)
+    start = from_date + datetime.timedelta(days=start_day)
+    end = start + datetime.timedelta(days=interval_len)
+    data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
+    c.adddata(data)
+    
+    res = c.run()
+    val = c.broker.get_value()/cash
 
-    norm_vals = pd.Series(vals)/cash
-    res = pd.DataFrame({'value': norm_vals, 'dropdown': pd.Series(dds)})
-    res['strategy'] = cer.__name__
-    res['ticker'] = ticker
-    return res
+    max_dd = res[0].analyzers[0].get_analysis()['max']['drawdown']
+
+    return cer.__name__, ticker, val, max_dd
 
 
 def evaluate_strategies(
@@ -53,14 +44,14 @@ def evaluate_strategies(
     n_trials: int,
     n_jobs: int
 ):
-    tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]
+    tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]*n_trials
 
     stats = Parallel(n_jobs)(
-        delayed(strategy_quality)(strategy, log, n_trials, ticker)
+        delayed(strategy_quality)(strategy, log, ticker)
         for strategy, ticker, log in tqdm(tasks)
     )
 
-    return pd.concat(stats, axis=0)
+    return pd.DataFrame(stats, columns=['strategy', 'ticker', 'value', 'dropdown'])
 
 
 def buy_and_hold_strategy():
