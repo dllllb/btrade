@@ -6,57 +6,52 @@ import backtrader as bt
 from collections import defaultdict
 from tqdm import tqdm
 from typing import Dict, List, Callable
+from joblib import Parallel, delayed
 
 def strategy_quality(
     cer: Callable[[], bt.Cerebro],
     data_source: pd.DataFrame,
-    n_trials: int
+    ticker: str,
 ):
     from_date = data_source.index.min()
     to_date = data_source.index.max()
     days = (to_date - from_date).days
 
-    vals = []
     cash = 100000.0
-    for _ in range(n_trials):
-        c = cer()
-        c.broker.setcash(cash)
+    c = cer()
+    c.broker.setcash(cash)
+    c.addanalyzer(bt.analyzers.DrawDown)
 
-        interval_len = np.random.randint(150, days-30)
-        start_day = np.random.randint(0, days - interval_len)
+    interval_len = np.random.randint(150, days-30)
+    start_day = np.random.randint(0, days - interval_len)
 
-        start = from_date + datetime.timedelta(days=start_day)
-        end = start + datetime.timedelta(days=interval_len)
-        data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
-        c.adddata(data)
-        
-        c.run()
-        val = c.broker.get_value()
-        vals.append(val)
+    start = from_date + datetime.timedelta(days=start_day)
+    end = start + datetime.timedelta(days=interval_len)
+    data = bt.feeds.PandasData(dataname=data_source.loc[start: end])
+    c.adddata(data)
+    
+    res = c.run()
+    val = c.broker.get_value()/cash
 
-    norm_vals = pd.Series(vals)/cash
-    return norm_vals
+    max_dd = res[0].analyzers[0].get_analysis()['max']['drawdown']
+
+    return cer.__name__, ticker, val, max_dd
 
 
 def evaluate_strategies(
     strategies: List[Callable[[], bt.Cerebro]],
     logs: Dict[str, pd.DataFrame],
-    n_trials: int
+    n_trials: int,
+    n_jobs: int
 ):
-    stats = defaultdict(list)
-    tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]
-    for strategy, log_name, log in tqdm(tasks):
-        stat = strategy_quality(strategy, log, n_trials).rename(f'{log_name}')
-        stats[strategy.__name__].append(stat)
+    tasks = [(s, ln, l) for s in strategies for ln, l in logs.items()]*n_trials
 
-    res = []
-    for strategy, ss in stats.items():
-        stat_df = pd.concat(ss, axis=1)
-        stat_df['strategy'] = strategy
-        res.append(stat_df)
+    stats = Parallel(n_jobs)(
+        delayed(strategy_quality)(strategy, log, ticker)
+        for strategy, ticker, log in tqdm(tasks)
+    )
 
-    res_df = pd.concat(res, axis=0)
-    return res_df
+    return pd.DataFrame(stats, columns=['strategy', 'ticker', 'value', 'dropdown'])
 
 
 def buy_and_hold_strategy():
@@ -253,5 +248,39 @@ def mean_reversion_nodrop_strategy():
     cerebro = bt.Cerebro()
 
     cerebro.addstrategy(MeanReversionNoDrop)
+    cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
+    return cerebro
+
+
+class AntiDrop(bt.Strategy):
+    def __init__(self):
+        self.initial_buy = False
+        self.acquired = False
+        self.mr_down = MeanReversion(window_small=5, window_large=30)
+        self.mr_up = MeanReversion(window_small=30, window_large=90)
+
+    def next(self):
+        if not self.initial_buy:
+            self.buy()
+            self.acquired = True
+            self.initial_buy = True
+        elif not self.acquired:
+            if self.data[0] > self.sell_price:
+                self.buy()
+                self.acquired = True
+            if self.mr_up > 0:
+                self.buy()
+                self.acquired = True
+        elif self.acquired:
+            if self.mr_down < 0:
+                self.close()
+                self.acquired = False
+                self.sell_price = self.data[0]
+
+
+def anti_drop_strategy():
+    cerebro = bt.Cerebro()
+
+    cerebro.addstrategy(AntiDrop)
     cerebro.addsizer(bt.sizers.PercentSizer, percents=100)
     return cerebro
