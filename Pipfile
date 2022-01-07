@@ -13,11 +13,11 @@ pandas = ">=0.24"
 pandas-datareader = ">=0.8.1"
 numpy = ">=1.16"
 scikit-learn = ">=0.20"
-backtrader = ">=1.9"
-matplotlib = ">=3,<=3.2.2"
-jupyter = "*"
+backtrader = {git = "https://github.com/mementum/backtrader.git"}
+matplotlib = ">=3"
+notebook = "*"
 requests-cache = ">=0.5.2"
 seaborn = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"
