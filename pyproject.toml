@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "btrade"
+version = "0.1.0"
+description = "Backtrader trading strategies"
+requires-python = ">=3.10"
+dependencies = [
+    "tqdm>=4.2",
+    "pandas>=0.24",
+    "pandas-datareader>=0.8.1",
+    "numpy>=1.16",
+    "scikit-learn>=0.20",
+    "matplotlib>=3",
+    "notebook",
+    "requests-cache>=0.5.2",
+    "seaborn",
+    "yfinance",
+    "backtrader@git+https://github.com/mementum/backtrader.git",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["btrade"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[dependency-groups]
+dev = [
+    "pylint",
+    "pytest",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+] 
