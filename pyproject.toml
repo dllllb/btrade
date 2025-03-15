@@ -5,8 +5,12 @@ build-backend = "hatchling.build"
 [project]
 name = "btrade"
 version = "0.1.0"
-description = "Backtrader trading strategies"
+description = "A simple demo of using Backtrader library"
 requires-python = ">=3.10"
+readme = "README.md"
+authors = [
+    {name = "Dmitri Babaev", email = "dmitri.babaev@gmail.com"},
+]
 dependencies = [
     "tqdm>=4.2",
     "pandas>=0.24",
